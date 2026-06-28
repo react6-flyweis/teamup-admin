@@ -1,0 +1,36 @@
+import type { IconProps } from '../../types';
+
+interface MailIconProps extends IconProps {
+    isActive?: boolean;
+}
+
+const MailIcon: React.FC<MailIconProps> = ({
+    size = 36,
+    isActive = false,
+    className,
+    ...props
+}) => {
+    // Inactive: '#888', Active: '#222'
+    const fillColor = isActive ? '#222222' : '#888888';
+
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 36 36"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className={className}
+            {...props}
+        >
+            <g opacity="0.3">
+                <path
+                    d="M32 6H4C3.46957 6 2.96086 6.21071 2.58579 6.58579C2.21071 6.96086 2 7.46957 2 8V28C2 28.5304 2.21071 29.0391 2.58579 29.4142C2.96086 29.7893 3.46957 30 4 30H32C32.5304 30 33.0391 29.7893 33.4142 29.4142C33.7893 29.0391 34 28.5304 34 28V8C34 7.46957 33.7893 6.96086 33.4142 6.58579C33.0391 6.21071 32.5304 6 32 6ZM30.46 28H5.66L12.66 20.76L11.22 19.37L4 26.84V9.52L16.43 21.89C16.8047 22.2625 17.3116 22.4716 17.84 22.4716C18.3684 22.4716 18.8753 22.2625 19.25 21.89L32 9.21V26.71L24.64 19.35L23.23 20.76L30.46 28ZM5.31 8H30.38L17.84 20.47L5.31 8Z"
+                    fill={fillColor}
+                />
+            </g>
+        </svg>
+    );
+};
+
+export default MailIcon;

@@ -1,0 +1,525 @@
+import React, { useRef, useState } from "react";
+import { UploadIcon } from "@/assets/icons";
+import { FormDropdown } from "@/components/common/FormDropdown";
+import Toggle from "@/components/common/Toggle";
+
+export interface GameData {
+  gameName: string;
+  peopleAllowedPerLane: string;
+  totalLanes: string;
+  timeOption: string;
+  pricePerPerson: string;
+  minimumAgeRequirement: string;
+  idRequired: boolean;
+  wheelchairAccessible: boolean;
+  gameIcon: string;
+  cardImage: string;
+  bannerPhoto: string;
+  headline: string;
+  description: string;
+}
+
+interface GameModalProps {
+  mode: "add" | "edit";
+  initialData?: Partial<GameData>;
+  onClose: () => void;
+  onSave: (gameData: GameData) => void;
+}
+
+const emptyState: GameData = {
+  gameName: "",
+  peopleAllowedPerLane: "",
+  totalLanes: "",
+  timeOption: "",
+  pricePerPerson: "",
+  minimumAgeRequirement: "",
+  idRequired: false,
+  wheelchairAccessible: false,
+  gameIcon: "",
+  cardImage: "",
+  bannerPhoto: "",
+  headline: "",
+  description: "",
+};
+
+const GameModal: React.FC<GameModalProps> = ({
+  mode,
+  initialData,
+  onClose,
+  onSave,
+}) => {
+  const [formData, setFormData] = useState<GameData>({
+    ...emptyState,
+    ...initialData,
+  });
+
+  const iconRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLInputElement>(null);
+  const bannerRef = useRef<HTMLInputElement>(null);
+
+  const timeOptions = [
+    "Select Time",
+    "30 Min",
+    "60 Min",
+    "Min: 30 - Max: 60",
+    "Min: 60 - Max: 90",
+  ];
+  const ageOptions = ["If Required", "18+", "21+", "All Ages"];
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    onSave(formData);
+  }
+
+  function handleBackdropClick(e: React.MouseEvent) {
+    if (e.target === e.currentTarget) onClose();
+  }
+
+  function handleImageUpload(field: keyof GameData, file?: File) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      if (evt.target?.result) {
+        setFormData((prev) => ({
+          ...prev,
+          [field]: evt.target!.result as string,
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-[#F9D2EA] rounded-2xl p-6 w-[683px] max-h-[95vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-black">
+            {mode === "add" ? "Add Game" : "Edit Game"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 bg-white rounded-full flex items-center justify-center"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20">
+              <path d="M15 5L5 15M5 5L15 15" stroke="#000" strokeWidth="1.5" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Game Name
+              </label>
+              <input
+                type="text"
+                value={formData.gameName}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, gameName: e.target.value }))
+                }
+                className="w-full p-3 border border-[#AEB4C2] rounded-lg bg-white"
+                placeholder="Enter Game Name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                People Allowed Per Lane
+              </label>
+              <input
+                type="text"
+                value={formData.peopleAllowedPerLane}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    peopleAllowedPerLane: e.target.value,
+                  }))
+                }
+                className="w-full p-3 border border-[#AEB4C2] rounded-lg bg-white"
+                placeholder="Enter Number"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Total Lanes
+              </label>
+              <input
+                type="text"
+                value={formData.totalLanes}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    totalLanes: e.target.value,
+                  }))
+                }
+                className="w-full p-3 border border-[#AEB4C2] rounded-lg bg-white"
+                placeholder="Enter Number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Time option
+              </label>
+              <FormDropdown
+                options={timeOptions}
+                value={formData.timeOption}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, timeOption: value }))
+                }
+                placeholder="Select Time"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Price Per Person
+              </label>
+              <input
+                type="text"
+                value={formData.pricePerPerson}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    pricePerPerson: e.target.value,
+                  }))
+                }
+                className="w-full p-3 border border-[#AEB4C2] rounded-lg bg-white"
+                placeholder="Enter Amount"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Minimum Age Requirement
+              </label>
+              <FormDropdown
+                options={ageOptions}
+                value={formData.minimumAgeRequirement}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    minimumAgeRequirement: value,
+                  }))
+                }
+                placeholder="If Required"
+              />
+            </div>
+          </div>
+
+          {/* Toggles */}
+          <div className="flex gap-20">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-sm font-medium text-black">
+                ID Required
+              </span>
+              <Toggle
+                checked={formData.idRequired}
+                onChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, idRequired: checked }))
+                }
+                activeColor="#003240"
+                inactiveColor="#4A4A4A"
+                activeText="Yes"
+                inactiveText="No"
+              />
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-sm font-medium text-black">
+                Wheelchair Accessible
+              </span>
+              <Toggle
+                checked={formData.wheelchairAccessible}
+                onChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    wheelchairAccessible: checked,
+                  }))
+                }
+                activeColor="#003240"
+                inactiveColor="#4A4A4A"
+                activeText="Yes"
+                inactiveText="No"
+              />
+            </div>
+          </div>
+
+          {/* Game Icon */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Add Game Icon
+              </label>
+              {!formData.gameIcon ? (
+                <div
+                  className="border border-dashed border-[#4A4A4A] rounded-lg bg-white w-full flex flex-col items-center justify-center cursor-pointer "
+                  style={{ minHeight: 90, height: 140 }}
+                  onClick={() => iconRef.current?.click()}
+                >
+                  <span className="font-[500] text-[#323232] text-base mb-1">
+                    Upload your game icon here
+                  </span>
+                  <UploadIcon className="w-8 h-8 text-[#C3C3C3]" />
+                  <button
+                    type="button"
+                    className="mt-2 px-5 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      iconRef.current?.click();
+                    }}
+                  >
+                    Select Photo
+                  </button>
+                  <input
+                    ref={iconRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    onChange={(e) =>
+                      handleImageUpload("gameIcon", e.target.files?.[0])
+                    }
+                  />
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="border border-dashed border-[#4A4A4A] rounded-lg bg-white w-full flex items-center justify-center"
+                    style={{ minHeight: 90, height:140 }}
+                  >
+                    <img
+                      src={formData.gameIcon}
+                      alt="Game Icon"
+                      className="object-contain rounded"
+                      style={{ maxHeight: 140, maxWidth: 164 }}
+                    />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <input
+                      ref={iconRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      tabIndex={-1}
+                      onChange={(e) =>
+                        handleImageUpload("gameIcon", e.target.files?.[0])
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="px-5 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+                      onClick={() => iconRef.current?.click()}
+                    >
+                      Change
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-black mb-1">
+                Add Card Image
+              </label>
+              {!formData.cardImage ? (
+                <div
+                  className="border border-dashed border-[#4A4A4A] rounded-lg bg-white w-full flex flex-col items-center justify-center cursor-pointer"
+                  style={{ minHeight: 90, height: 140 }}
+                  onClick={() => cardRef.current?.click()}
+                >
+                  <span className="font-[500] text-[#323232] text-base mb-1">
+                    Upload your Card Image
+                  </span>
+                  <UploadIcon className="w-8 h-8 text-[#C3C3C3]" />
+                  <button
+                    type="button"
+                    className="mt-2 px-5 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cardRef.current?.click();
+                    }}
+                  >
+                    Select Photo
+                  </button>
+                  <input
+                    ref={cardRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    onChange={(e) =>
+                      handleImageUpload("cardImage", e.target.files?.[0])
+                    }
+                  />
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="border border-dashed border-[#4A4A4A] rounded-lg bg-white w-full flex items-center justify-center"
+                    style={{ minHeight: 90, height: 140 }}
+                  >
+                    <img
+                      src={formData.cardImage}
+                      alt="Card Image"
+                      className="object-contain rounded"
+                      style={{ maxHeight: 140, maxWidth: 164 }}
+                    />
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <input
+                      ref={cardRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      tabIndex={-1}
+                      onChange={(e) =>
+                        handleImageUpload("cardImage", e.target.files?.[0])
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="px-5 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+                      onClick={() => cardRef.current?.click()}
+                    >
+                      Change
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Banner - with inner Select and outer Change */}
+          <div>
+            <label className="block text-sm font-medium text-black mb-1">
+              Add Game Banner Photo
+            </label>
+            {!formData.bannerPhoto ? (
+              <div
+                className="border border-dashed border-[#4A4A4A] rounded-lg bg-white w-full flex flex-col items-center justify-center cursor-pointer"
+                style={{ minHeight: 110, height: 180 }}
+                onClick={() => bannerRef.current?.click()}
+              >
+                <span className="font-[500] text-[#323232] text-base mb-1 mt-1.5">
+                  Upload your game icon here
+                </span>
+                <UploadIcon className="w-8 h-8 text-[#C3C3C3]" />
+                <span className="pt-2 text-xs text-gray-600 mb-2">
+                  Supported file format PNG, JPEG, JPG
+                </span>
+                <button
+                  type="button"
+                  className="mt-1 px-5 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    bannerRef.current?.click();
+                  }}
+                >
+                  Select Photo
+                </button>
+                <input
+                  ref={bannerRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  tabIndex={-1}
+                  onChange={(e) =>
+                    handleImageUpload("bannerPhoto", e.target.files?.[0])
+                  }
+                />
+              </div>
+            ) : (
+              <>
+                <div
+                  className="border border-dashed border-[#4A4A4A] rounded-lg bg-white w-full flex items-center justify-center"
+                  style={{ minHeight: 110, height: 180 }}
+                >
+                  <img
+                    src={formData.bannerPhoto}
+                    alt="Banner"
+                    className="h-[90px] object-contain rounded"
+                    style={{ maxWidth: "full" }}
+                  />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <input
+                    ref={bannerRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    tabIndex={-1}
+                    onChange={(e) =>
+                      handleImageUpload("bannerPhoto", e.target.files?.[0])
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="px-5 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+                    onClick={() => bannerRef.current?.click()}
+                  >
+                    Change
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Headline */}
+          <div className="mt-5">
+            <label className="block text-sm font-medium text-black mb-1">
+              Add Headline
+            </label>
+            <input
+              type="text"
+              value={formData.headline || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, headline: e.target.value }))
+              }
+              className="w-full p-3 border border-[#AEB4C2] rounded-lg bg-white"
+              placeholder="Add your game headline here......"
+            />
+          </div>
+          {/* Description */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-black mb-1">
+              Add Description
+            </label>
+            <textarea
+              value={formData.description || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
+              className="w-full p-3 border border-[#AEB4C2] rounded-lg bg-white min-h-[100px]"
+              placeholder="Add your game description here......"
+            />
+          </div>
+
+          <div className="flex justify-end gap-6 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-7 py-2 border-2 border-[#E1017D] text-[#E1017D] font-bold rounded-lg bg-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-7 py-2 bg-[#E1017D] text-white font-bold rounded-lg"
+            >
+              {mode === "add" ? "Add Game" : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default GameModal;

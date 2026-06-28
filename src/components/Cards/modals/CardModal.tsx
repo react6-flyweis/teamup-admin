@@ -1,0 +1,154 @@
+import React, { useState, useRef } from 'react';
+import { UploadIcon } from '../../../assets/icons';
+
+interface CardFormData {
+  headline: string;
+  description: string;
+  image: string;
+}
+
+interface CardModalProps {
+  title: string;
+  initialData?: CardFormData;
+  onClose: () => void;
+  onSubmit: (data: CardFormData) => void;
+  submitLabel: string;
+}
+
+const CardModal: React.FC<CardModalProps> = ({
+  title,
+  initialData = { headline: '', description: '', image: '' },
+  onClose,
+  onSubmit,
+  submitLabel
+}) => {
+  const [formData, setFormData] = useState<CardFormData>(initialData);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, image: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-[#F9D2EA] rounded-2xl  w-[683px] max-h-[95vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center  p-6">
+          <h2 className="text-2xl font-bold">{title}</h2>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 bg-white rounded-full flex items-center justify-center"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="border-t border-black p-6">
+          {/* Form */}
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(formData);
+          }}>
+            {/* Headline */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Enter Headline here
+              </label>
+              <input
+                type="text"
+                value={formData.headline}
+                onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
+                className="w-full h-12 px-4 rounded-lg border border-gray-300 bg-white"
+                placeholder="Enter headline..."
+              />
+            </div>
+
+            {/* Description */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full h-32 px-4 py-2 rounded-lg border border-gray-300 bg-white resize-none"
+                placeholder="Enter description..."
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1">
+                Image
+              </label>
+              <div className="border border-dashed border-black rounded-lg p-4 h-[218px] relative bg-white">
+                {formData.image ? (
+                  <div className="relative h-full">
+                    <img
+                      src={formData.image}
+                      alt="Uploaded preview"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute bottom-4 right-4 bg-white text-[#E1017D] border border-[#E1017D] px-5 py-2 rounded-lg font-semibold"
+                    >
+                      Change Image
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-3 h-full">
+                    <p className=" font-medium">Upload your photo here</p>
+                    <UploadIcon />
+                    <p className="text-sm text-gray-500">Supported file format PNG, JPEG, JPG</p>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="mt-4 text-[#E1017D] border border-[#E1017D] px-5 py-2 rounded-lg font-semibold"
+                    >
+                      Select Photo
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-6">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2 border border-[#7E0B0B] text-[#7E0B0B] rounded-lg font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-[#E1017D] text-white rounded-lg font-semibold"
+              >
+                {submitLabel}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CardModal;
