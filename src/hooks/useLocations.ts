@@ -1,0 +1,71 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/utils/apiClient';
+
+export interface LocationOpeningHour {
+  day: string;
+  open: string;
+  close: string;
+  isClosed: boolean;
+}
+
+export interface Location {
+  _id: string;
+  name: string;
+  slug: string;
+  city: string;
+  state: string;
+  address: string;
+  phone: string;
+  email: string;
+  openingHours: LocationOpeningHour[];
+  mapEmbedUrl: string;
+  latitude: number;
+  longitude: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LocationsResponse {
+  locations: Location[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export const useLocationsQuery = () => {
+  return useQuery<LocationsResponse>({
+    queryKey: ['locations'],
+    queryFn: async () => {
+      const response = await apiClient.get('/locations');
+      return response.data;
+    },
+  });
+};
+
+export interface UpdateLocationPayload {
+  address?: string;
+  openingHours?: {
+    day: string;
+    open: string;
+    close: string;
+    isClosed: boolean;
+  }[];
+  mapEmbedUrl?: string;
+}
+
+export const useUpdateLocationMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ locationId, payload }: { locationId: string; payload: UpdateLocationPayload }) => {
+      const response = await apiClient.patch(`/locations/${locationId}`, payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] });
+    },
+  });
+};
