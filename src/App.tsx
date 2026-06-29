@@ -25,6 +25,7 @@ import Login from "./pages/Login";
 import StaffDetail from "./pages/StaffDetail";
 import Venues from "./pages/Venues";
 import SocialReviews from "./pages/SocialReviews";
+import { AuthGuard } from "@/components/AuthGuard";
 
 function App() {
   return (
@@ -34,31 +35,33 @@ function App() {
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
 
-        {/* Dashboard Routes - With Layout */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/manage-home" replace />} />
-          <Route path="manage-home" element={<ManageHome />} />
-          <Route path="manage-header" element={<ManageHeader />} />
-          <Route path="manage-header/category/:categoryId" element={<CategoryFormPage />} />
-          <Route path="manage-header/:categoryId/game/:subItemId" element={<GameFormPage />} />
-          <Route path="manage-header/:categoryId/group-activity/:subItemId" element={<GroupActivityFormPage />} />
-          <Route path="manage-header/:categoryId/team-parties/:subItemId" element={<TeamPartiesFormPage />} />
-          <Route path="manage-header/:categoryId/boom-bundle/:subItemId" element={<BoomBundleFormPage />} />
-          <Route path="manage-header/:categoryId/queens-night/:subItemId" element={<QueensNightFormPage />} />
-          <Route path="manage-footer" element={<ManageFooter />} />
-          <Route path="game-venue" element={<Games />} />
-          <Route path="food-drinks" element={<Bites />} />
-          <Route path="bookings" element={<Bookings />} />
-          <Route path="payments" element={<Payments />} />
-          <Route path="promotion" element={<Promotions />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="staff-roles" element={<StaffRoles />} />
-          <Route path="staff-roles/:id" element={<StaffDetail />} />
-          <Route path="alerts" element={<Alerts />} />
-          <Route path="social-reviews" element={<SocialReviews />} />
-          <Route path="venues" element={<Venues />} />
-          <Route path="insight" element={<Insights />} />
-          <Route path="security" element={<Security />} />
+        {/* Dashboard Routes - With Layout & Protected by AuthGuard */}
+        <Route element={<AuthGuard />}>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/manage-home" replace />} />
+            <Route path="manage-home" element={<ManageHome />} />
+            <Route path="manage-header" element={<ManageHeader />} />
+            <Route path="manage-header/category/:categoryId" element={<CategoryFormPage />} />
+            <Route path="manage-header/:categoryId/game/:subItemId" element={<GameFormPage />} />
+            <Route path="manage-header/:categoryId/group-activity/:subItemId" element={<GroupActivityFormPage />} />
+            <Route path="manage-header/:categoryId/team-parties/:subItemId" element={<TeamPartiesFormPage />} />
+            <Route path="manage-header/:categoryId/boom-bundle/:subItemId" element={<BoomBundleFormPage />} />
+            <Route path="manage-header/:categoryId/queens-night/:subItemId" element={<QueensNightFormPage />} />
+            <Route path="manage-footer" element={<ManageFooter />} />
+            <Route path="game-venue" element={<Games />} />
+            <Route path="food-drinks" element={<Bites />} />
+            <Route path="bookings" element={<Bookings />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="promotion" element={<Promotions />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="staff-roles" element={<StaffRoles />} />
+            <Route path="staff-roles/:id" element={<StaffDetail />} />
+            <Route path="alerts" element={<Alerts />} />
+            <Route path="social-reviews" element={<SocialReviews />} />
+            <Route path="venues" element={<Venues />} />
+            <Route path="insight" element={<Insights />} />
+            <Route path="security" element={<Security />} />
+          </Route>
         </Route>
       </Routes>
     </Router>
