@@ -1,19 +1,43 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import AuthBackground from "@/assets/AuthBackground.jpg";
 import { MailIcon, LockIcon, EyeIcon, HideEyeIcon } from "@/assets/icons";
 import TeamUpLogo from "@/assets/TeamUp2.png";
+import { useLoginMutation, loginSchema } from "@/hooks/useAuth";
+import type { LoginSchema } from "@/hooks/useAuth";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle sign in logic here
-    navigate("/");
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const loginMutation = useLoginMutation();
+
+  const onSubmit = async (data: LoginSchema) => {
+    try {
+      await loginMutation.mutateAsync(data);
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { message?: string } } };
+      const message = errorObj.response?.data?.message || "Invalid credentials or server error. Please try again.";
+      setError("root", {
+        type: "server",
+        message,
+      });
+    }
   };
 
   const handleSignUp = () => {
@@ -33,15 +57,22 @@ const Login: React.FC = () => {
         {/* Main Content */}
         <div className="flex flex-col items-center justify-center h-full px-6 lg:px-11">
           {/* Title */}
-          <h1 className="font-raleway font-extrabold text-[32px] lg:text-[48px] leading-[40px] lg:leading-[56px] text-center text-[#292524] mb-[32px] lg:mb-[54px]">
+          <h1 className="font-raleway font-extrabold text-[32px] lg:text-[48px] leading-[40px] lg:leading-[56px] text-center text-[#292524] mb-[20px] lg:mb-[30px]">
             Sign in to Team-Up
           </h1>
 
           {/* Form */}
           <form
-            onSubmit={handleSignIn}
+             onSubmit={handleSubmit(onSubmit)}
             className="w-full max-w-[400px] lg:max-w-[500px]"
           >
+            {/* Error Message */}
+            {errors.root && (
+              <div className="mb-[20px] p-4 bg-red-55 border border-red-200 rounded-[12px] text-red-600 font-raleway font-semibold text-[14px] lg:text-[16px] text-center">
+                {errors.root.message}
+              </div>
+            )}
+
             {/* Email Input */}
             <div className="relative mb-[20px] lg:mb-[31px]">
               <div className="w-full h-[70px] lg:h-[90px] bg-[#EAEEED] rounded-[16px] lg:rounded-[20px] flex items-center px-4 lg:px-6   focus-within:border-gray-300  focus-within:border">
@@ -52,12 +83,17 @@ const Login: React.FC = () => {
                 <input
                   type="email"
                   placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  {...register("email")}
                   className="flex-1 bg-transparent font-raleway font-medium text-[20px] lg:text-[26px] leading-[24px] lg:leading-[31px] text-black placeholder-[#a4a4a4] placeholder-opacity-30 outline-none"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
+            {errors.email && (
+              <span className="text-red-500 text-[14px] font-semibold pl-2 block -mt-3 mb-3">
+                {errors.email.message}
+              </span>
+            )}
 
             {/* Password Input */}
             <div className="relative mb-[32px] lg:mb-[46px]">
@@ -69,14 +105,15 @@ const Login: React.FC = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  {...register("password")}
                   className="flex-1 bg-transparent font-raleway font-medium text-[20px] lg:text-[26px] leading-[24px] lg:leading-[31px] text-black placeholder-[#a4a4a4] placeholder-opacity-30 outline-none"
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="ml-2 focus:outline-none"
+                  disabled={isSubmitting}
                 >
                   {showPassword ? (
                     <HideEyeIcon size={24} className="text-black " />
@@ -86,12 +123,18 @@ const Login: React.FC = () => {
                 </button>
               </div>
             </div>
+            {errors.password && (
+              <span className="text-red-500 text-[14px] font-semibold pl-2 block -mt-3 mb-3">
+                {errors.password.message}
+              </span>
+            )}
 
             {/* Forgot Password */}
             <div className="text-center mb-[32px] lg:mb-[46px]">
               <button
                 type="button"
                 className="font-raleway font-extrabold text-[20px] lg:text-[30px] leading-[24px] lg:leading-[35px] text-black opacity-80 hover:opacity-100 transition-opacity"
+                disabled={isSubmitting}
               >
                 Forget your Password?
               </button>
@@ -101,10 +144,11 @@ const Login: React.FC = () => {
             <div className="flex justify-center">
               <button
                 type="submit"
-                className="w-[280px] lg:w-[333px] h-[60px] lg:h-[79px] bg-[#E1017D] rounded-[30px] lg:rounded-[50.5px] flex items-center justify-center hover:bg-[#B71778] transition-colors"
+                disabled={isSubmitting}
+                className="w-[280px] lg:w-[333px] h-[60px] lg:h-[79px] bg-[#E1017D] rounded-[30px] lg:rounded-[50.5px] flex items-center justify-center hover:bg-[#B71778] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <span className="font-raleway font-semibold text-[20px] lg:text-[30px] leading-[24px] lg:leading-[35px] text-white">
-                  SIGN IN
+                  {isSubmitting ? "SIGNING IN..." : "SIGN IN"}
                 </span>
               </button>
             </div>
