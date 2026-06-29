@@ -2,76 +2,29 @@ import React, { useState } from "react";
 import EditIcon from "@/assets/icons/EditIcon";
 import TrashIcon from "@/assets/icons/TrashIcon";
 import AddVenueModal from "@/components/Venue/AddVenueModal";
-
-type Venue = {
-  id: string;
-  country: string;
-  name: string;
-  city: string;
-  zip: string;
-  state: string;
-  countryLabel: string;
-};
-
-const venues: Venue[] = [
-  {
-    id: "1",
-    country: "United States",
-    name: "Folsom, CA",
-    city: "Folsom",
-    zip: "95630",
-    state: "California",
-    countryLabel: "United States Of America",
-  },
-  {
-    id: "2",
-    country: "United States",
-    name: "Citrus Height, CA",
-    city: "Citrus High",
-    zip: "95610",
-    state: "California",
-    countryLabel: "United States Of America",
-  },
-  {
-    id: "3",
-    country: "United States",
-    name: "Lorem Ipsum",
-    city: "Lorem Ipsum",
-    zip: "Lorem Ipsum",
-    state: "Lorem Ipsum",
-    countryLabel: "United States Of America",
-  },
-  {
-    id: "4",
-    country: "United States",
-    name: "Lorem Ipsum",
-    city: "Lorem Ipsum",
-    zip: "Lorem Ipsum",
-    state: "Lorem Ipsum",
-    countryLabel: "United States Of America",
-  },
-  {
-    id: "5",
-    country: "United States",
-    name: "Lorem Ipsum",
-    city: "Lorem Ipsum",
-    zip: "Lorem Ipsum",
-    state: "Lorem Ipsum",
-    countryLabel: "United States Of America",
-  },
-  {
-    id: "6",
-    country: "United States",
-    name: "Lorem Ipsum",
-    city: "Lorem Ipsum",
-    zip: "Lorem Ipsum",
-    state: "Lorem Ipsum",
-    countryLabel: "United States Of America",
-  },
-];
+import { useLocationsQuery } from "@/hooks/useLocations";
 
 const LocationVenues: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const { data, isLoading, isError } = useLocationsQuery();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="text-white text-lg font-poppins">Loading locations...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="text-red-500 text-lg font-poppins">Error loading locations.</div>
+      </div>
+    );
+  }
+
+  const locations = data?.locations || [];
 
   return (
     <div className="mb-8">
@@ -88,15 +41,15 @@ const LocationVenues: React.FC = () => {
       </div>
       <div className="w-full flex justify-center">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full ">
-          {venues.map((venue) => (
+          {locations.map((venue) => (
             <div
-              key={venue.id}
+              key={venue._id}
               className="bg-[#F9D2EA] rounded-[16px] flex flex-col px-4 py-6 w-full h-[230px] relative "
             >
               <div className="flex flex-row items-start justify-between mb-2">
                 <div>
                   <div className="font-poppins font-medium text-[12px] text-black leading-[18px]">
-                    {venue.countryLabel}
+                    -
                   </div>
                   <div className="font-poppins font-bold text-[16px] text-black leading-[24px]">
                     {venue.name}
@@ -117,7 +70,7 @@ const LocationVenues: React.FC = () => {
                     City:
                   </div>
                   <div className="font-poppins text-[16px] text-black text-right">
-                    {venue.city}
+                    {venue.city || "-"}
                   </div>
                 </div>
                 <div className="flex flex-row justify-between items-start">
@@ -125,7 +78,7 @@ const LocationVenues: React.FC = () => {
                     Zip Code:
                   </div>
                   <div className="font-poppins text-[16px] text-black text-right">
-                    {venue.zip}
+                    -
                   </div>
                 </div>
                 <div className="flex flex-row justify-between items-start">
@@ -133,7 +86,7 @@ const LocationVenues: React.FC = () => {
                     State:
                   </div>
                   <div className="font-poppins text-[16px] text-black text-right">
-                    {venue.state}
+                    {venue.state || "-"}
                   </div>
                 </div>
                 <div className="flex flex-row justify-between items-start">
@@ -141,7 +94,7 @@ const LocationVenues: React.FC = () => {
                     Country:
                   </div>
                   <div className="font-poppins text-[16px] text-black text-right">
-                    {venue.country}
+                    -
                   </div>
                 </div>
               </div>
