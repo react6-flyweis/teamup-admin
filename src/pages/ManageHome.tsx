@@ -47,8 +47,8 @@ const ManageHome: React.FC = () => {
       <div className="mt-6">
         {activeTab === 'hero' && <HeroSectionForm initialData={mockHomePageData.hero} />}
         {activeTab === 'bundles' && <BoomBundlesForm initialData={mockHomePageData.bundles} />}
-        {activeTab === 'location' && <LocationHoursForm initialData={mockHomePageData.location} />}
-        {activeTab === 'games' && <ChooseGamesForm initialData={mockHomePageData.games} />}
+        {activeTab === 'location' && <LocationHoursForm />}
+        {activeTab === 'games' && <ChooseGamesForm />}
         {activeTab === 'bites' && (
           <BitesAndEventsForm 
             initialBites={mockHomePageData.bites} 
@@ -61,3 +61,5 @@ const ManageHome: React.FC = () => {
 };
 
 export default ManageHome;
+
+
