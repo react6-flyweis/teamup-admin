@@ -8,7 +8,7 @@ interface FooterLinkModalProps {
   initialUrl: string;
   initialContent?: string;
   isAdding: boolean;
-  onSave: (label: string, url: string, content: string) => void;
+  onSave: (label: string, url: string, content: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -23,6 +23,8 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
   const [label, setLabel] = useState(initialLabel);
   const [url, setUrl] = useState(initialUrl);
   const [content, setContent] = useState(initialContent);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const modules = {
     toolbar: [
@@ -34,6 +36,29 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
     ],
   };
 
+  const handleSave = async () => {
+    if (!label.trim()) {
+      setErrorMsg('Link label is required');
+      return;
+    }
+    if (!url.trim()) {
+      setErrorMsg('Internal URL path is required');
+      return;
+    }
+
+    setErrorMsg(null);
+    setIsSaving(true);
+    try {
+      await onSave(label, url, content);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = error?.response?.data?.message || error?.message || 'Failed to save. Please try again.';
+      setErrorMsg(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-[#1C1C1C] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-[#3A3530] shadow-2xl">
@@ -41,12 +66,18 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
           <h2 className="text-xl font-bold text-white">
             {isAdding ? 'Add Footer Link' : `Edit Content: ${initialLabel}`}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={onClose} disabled={isSaving} className="text-gray-400 hover:text-white transition-colors disabled:opacity-50">
             <CloseIcon />
           </button>
         </div>
 
         <div className="p-6 overflow-y-auto flex-1">
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg text-sm">
+              {errorMsg}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-sm text-gray-400 mb-2">Link Label</label>
@@ -54,7 +85,8 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
-                className="w-full h-10 px-4 rounded bg-[#2A2A2A] border border-[#3A3530] text-white"
+                disabled={isSaving}
+                className="w-full h-10 px-4 rounded bg-[#2A2A2A] border border-[#3A3530] text-white disabled:opacity-50"
                 placeholder="e.g. ABOUT US"
               />
             </div>
@@ -64,7 +96,8 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full h-10 px-4 rounded bg-[#2A2A2A] border border-[#3A3530] text-white"
+                disabled={isSaving}
+                className="w-full h-10 px-4 rounded bg-[#2A2A2A] border border-[#3A3530] text-white disabled:opacity-50"
                 placeholder="e.g. /about"
               />
             </div>
@@ -78,6 +111,7 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
                 value={content} 
                 onChange={setContent} 
                 modules={modules}
+                readOnly={isSaving}
                 className="text-black h-[300px]"
                 style={{ height: '300px', paddingBottom: '42px' }}
               />
@@ -88,15 +122,24 @@ const FooterLinkModal: React.FC<FooterLinkModalProps> = ({
         <div className="p-6 border-t border-[#3A3530] flex justify-end gap-4 bg-[#1C1C1C] rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-6 py-2 rounded-lg font-medium text-white border border-gray-600 hover:bg-gray-800 transition-colors"
+            disabled={isSaving}
+            className="px-6 py-2 rounded-lg font-medium text-white border border-gray-600 hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            onClick={() => onSave(label, url, content)}
-            className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            Save Content
+            {isSaving ? (
+              <>
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                Saving...
+              </>
+            ) : (
+              'Save Content'
+            )}
           </button>
         </div>
       </div>
