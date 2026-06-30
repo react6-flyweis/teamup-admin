@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { BitesAndDrinks, NightsOut } from './types';
 
 interface BitesAndEventsFormProps {
   initialBites: BitesAndDrinks;
   initialNightsOut: NightsOut;
+  onSave?: (bites: BitesAndDrinks, nightsOut: NightsOut) => void;
+  isSaving?: boolean;
 }
 
-const BitesAndEventsForm: React.FC<BitesAndEventsFormProps> = ({ initialBites, initialNightsOut }) => {
+const BitesAndEventsForm: React.FC<BitesAndEventsFormProps> = ({ initialBites, initialNightsOut, onSave, isSaving }) => {
   const [bites, setBites] = useState<BitesAndDrinks>(initialBites);
   const [nightsOut, setNightsOut] = useState<NightsOut>(initialNightsOut);
+
+  useEffect(() => {
+    setBites(initialBites);
+  }, [initialBites]);
+
+  useEffect(() => {
+    setNightsOut(initialNightsOut);
+  }, [initialNightsOut]);
 
   return (
     <div className="bg-[#1C1C1C] rounded-xl p-6 border border-[#3A3530]">
@@ -94,8 +104,12 @@ const BitesAndEventsForm: React.FC<BitesAndEventsFormProps> = ({ initialBites, i
       </div>
       
       <div className="mt-8 flex justify-end">
-        <button className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors">
-          Save Changes
+        <button 
+          onClick={() => onSave && onSave(bites, nightsOut)}
+          disabled={isSaving}
+          className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
