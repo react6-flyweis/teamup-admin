@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useGamesQuery, type Game } from '@/hooks/useGames';
 import { EditIcon, TrashIcon, EyeIcon, HideEyeIcon } from '@/assets/icons';
 
-const ChooseGamesForm: React.FC = () => {
+interface ChooseGamesFormProps {
+  onSave?: (games: Game[]) => void;
+  isSaving?: boolean;
+}
+
+const ChooseGamesForm: React.FC<ChooseGamesFormProps> = ({ onSave, isSaving }) => {
   const { data: gamesData, isLoading, error } = useGamesQuery();
   const [games, setGames] = useState<Game[]>([]);
 
@@ -72,8 +77,12 @@ const ChooseGamesForm: React.FC = () => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <button className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors">
-          Save Changes
+        <button 
+          onClick={() => onSave && onSave(games)}
+          disabled={isSaving}
+          className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
