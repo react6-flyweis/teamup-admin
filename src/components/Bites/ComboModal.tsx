@@ -1,21 +1,14 @@
 import React from 'react';
-
-interface ComboItem {
-  id?: number;
-  pizza: string;
-  bevvies: string;
-  burger: string;
-  welcomeBevvy: string;
-  shots: string;
-}
+import type { ComboItem } from '../../pages/Bites';
 
 interface ComboModalProps {
   combo?: ComboItem;
   onClose: () => void;
   onSave: (combo: Partial<ComboItem>) => void;
+  isSaving?: boolean;
 }
 
-const ComboModal: React.FC<ComboModalProps> = ({ combo, onClose, onSave }) => {
+const ComboModal: React.FC<ComboModalProps> = ({ combo, onClose, onSave, isSaving = false }) => {
   const [values, setValues] = React.useState<Partial<ComboItem>>({
     pizza: combo?.pizza || '',
     bevvies: combo?.bevvies || '',
@@ -43,7 +36,8 @@ const ComboModal: React.FC<ComboModalProps> = ({ combo, onClose, onSave }) => {
           </h2>
           <button
             onClick={onClose}
-            className="w-6 h-6 bg-white rounded-full flex items-center justify-center"
+            disabled={isSaving}
+            className="w-6 h-6 bg-white rounded-full flex items-center justify-center disabled:opacity-50"
           >
             <svg width="20" height="20" viewBox="0 0 20 20">
               <path d="M15 5L5 15M5 5L15 15" stroke="#000" strokeWidth="1.5"/>
@@ -121,15 +115,20 @@ const ComboModal: React.FC<ComboModalProps> = ({ combo, onClose, onSave }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 border border-[#7E0B0B] text-[#7E0B0B] rounded-lg"
+              disabled={isSaving}
+              className="px-5 py-2 border border-[#7E0B0B] text-[#7E0B0B] rounded-lg disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#E1017D] text-white rounded-lg"
+              disabled={isSaving}
+              className="px-5 py-2 bg-[#E1017D] text-white rounded-lg disabled:opacity-50 flex items-center gap-2"
             >
-              {combo ? 'Save Changes' : 'Add Combo'}
+              {isSaving && (
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+              )}
+              {isSaving ? 'Saving...' : (combo ? 'Save Changes' : 'Add Combo')}
             </button>
           </div>
         </form>
