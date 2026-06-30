@@ -1,43 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import type { HeroSection } from './types';
 import Toggle from '@/components/common/Toggle';
-import UploadIcon from '@/assets/icons/UploadIcon';
 import TeamUpLogo from '@/assets/TeamUp.png';
-import type { HeaderCategory } from '@/components/ManageHeader/types';
-import { initialMockData } from '@/components/ManageHeader/mockData';
+import FileUploader from '@/components/common/FileUploader';
+import { useHeaderCategoriesQuery } from '@/hooks/useHeaderCategories';
+import { useLocationsQuery } from '@/hooks/useLocations';
 
 interface HeroSectionFormProps {
   initialData: HeroSection;
+  onSave?: (data: HeroSection) => void;
+  isSaving?: boolean;
 }
 
-const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
+const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData, onSave, isSaving }) => {
   const [data, setData] = useState<HeroSection>(initialData);
   const [showPreview, setShowPreview] = useState(false);
-  const [categories, setCategories] = useState<HeaderCategory[]>([]);
-  const [locations, setLocations] = useState<string[]>(['🇺🇸 Folsom, CA']);
+  const { data: categoriesData } = useHeaderCategoriesQuery();
+  const { data: locationsData } = useLocationsQuery();
+  const categories = categoriesData?.categories || [];
+  const locations = locationsData?.locations?.map(loc => loc.name) || [];
 
   useEffect(() => {
-    const savedVersion = localStorage.getItem('headerCategoriesVersion');
-    const saved = localStorage.getItem('headerCategories');
-    const MOCK_DATA_VERSION = 'v8';
-    if (saved && savedVersion === MOCK_DATA_VERSION) {
-      setCategories(JSON.parse(saved));
-    } else {
-      setCategories(initialMockData);
-    }
-    
-    const savedLocs = localStorage.getItem('headerLocations');
-    if (savedLocs) {
-      setLocations(JSON.parse(savedLocs));
-    }
-  }, []);
+    setData(initialData);
+  }, [initialData]);
 
   return (
     <div className="bg-[#1C1C1C] rounded-xl p-6 border border-[#3A3530]">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-white">Hero Section & Top Banner</h2>
-        <button 
-          onClick={() => setShowPreview(!showPreview)} 
+        <button
+          onClick={() => setShowPreview(!showPreview)}
           className="bg-[#2A2A2A] hover:bg-[#3A3530] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-[#3A3530]"
         >
           {showPreview ? 'Hide Preview' : 'Show Preview'}
@@ -46,21 +38,21 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
 
       {showPreview && (
         <div className="mb-8 border border-[#3A3530] rounded-xl overflow-hidden shadow-2xl relative">
-          
+
           {/* Header Preview */}
           <div className="bg-black relative" style={{ backgroundImage: 'radial-gradient(circle at center, #1a1a1a 0%, #050505 100%)' }}>
             <div className="flex items-center justify-between px-6 py-4">
               {/* Logo */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <img src={TeamUpLogo} alt="Team Up" className="h-10 object-contain" />
               </div>
-              
+
               <div className="flex items-center gap-8 text-sm">
                 {/* Location */}
                 <div className="relative group flex items-center gap-2 border border-gray-600 rounded px-3 py-1.5 cursor-pointer hover:bg-gray-800 transition-colors">
                   <span className="font-medium text-[13px] text-white">{locations[0]}</span>
                   <span className="text-gray-400 text-[10px]">▼</span>
-                  
+
                   {locations.length > 1 && (
                     <div className="absolute top-full left-0 mt-1 min-w-[120%] bg-[#111111] border border-[#3A3530] rounded shadow-2xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200 z-50 text-left">
                       {locations.slice(1).map((loc, i) => (
@@ -71,7 +63,7 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Nav items */}
                 <div className="hidden lg:flex items-center gap-6 font-medium tracking-wide text-[13px] text-white">
                   {categories.filter(c => !c.isHidden).slice(0, 4).map(cat => (
@@ -86,7 +78,7 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
                           <div className="py-2">
                             {cat.subItems.map(sub => (
                               <div key={sub.id} className="px-4 py-2 hover:bg-[#E1017D] hover:text-white text-gray-300 text-sm transition-colors">
-                                {sub.title}
+                                {sub.name}
                               </div>
                             ))}
                           </div>
@@ -118,7 +110,11 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
           {/* Hero Section Preview */}
           <div className="w-full h-[350px] relative flex flex-col justify-center items-center text-center">
             {data.backgroundMediaUrl ? (
-              <video src={data.backgroundMediaUrl} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-60" />
+              data.backgroundMediaUrl.match(/\.(mp4|webm|ogg|mov)$/i) || data.backgroundMediaUrl.includes('video') ? (
+                <video src={data.backgroundMediaUrl} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-60" />
+              ) : (
+                <img src={data.backgroundMediaUrl} alt="Background Preview" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+              )
             ) : (
               <div className="absolute inset-0 bg-gray-900 bg-opacity-80" />
             )}
@@ -165,26 +161,15 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
       {/* Hero Banner Settings */}
       <div>
         <h3 className="text-lg font-medium text-white mb-4">Hero Banner</h3>
-        
+
         <div className="space-y-6">
           {/* Background Video */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Background Video URL</label>
-            <div className="relative w-full h-[200px] rounded-lg border-2 border-dashed border-gray-500 flex flex-col items-center justify-center overflow-hidden">
-              {data.backgroundMediaUrl ? (
-                <>
-                  <video src={data.backgroundMediaUrl} autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                  <div className="relative z-10 flex flex-col items-center">
-                    <button className="bg-black/50 px-4 py-2 rounded text-white text-sm backdrop-blur-sm" onClick={() => setData({...data, backgroundMediaUrl: ''})}>Remove Video</button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center">
-                  <UploadIcon size={32} className="mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-400 text-sm">Enter video URL below</p>
-                </div>
-              )}
-            </div>
+            <label className="block text-sm text-gray-400 mb-2">Background Media (Image or Video)</label>
+            <FileUploader
+              value={data.backgroundMediaUrl}
+              onChange={(url) => setData({ ...data, backgroundMediaUrl: url })}
+            />
             <input
               type="text"
               value={data.backgroundMediaUrl}
@@ -205,7 +190,7 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
                 className="w-full h-10 px-4 rounded bg-[#2A2A2A] border border-[#3A3530] text-white"
               />
             </div>
-            
+
             {/* Subtitle / Location */}
             <div>
               <label className="block text-sm text-gray-400 mb-2">Subtitle / Location</label>
@@ -272,16 +257,20 @@ const HeroSectionForm: React.FC<HeroSectionFormProps> = ({ initialData }) => {
 
         </div>
       </div>
-      
+
       <div className="mt-8 flex justify-end gap-4">
-        <button 
-          onClick={() => setShowPreview(!showPreview)} 
+        <button
+          onClick={() => setShowPreview(!showPreview)}
           className="bg-[#2A2A2A] hover:bg-[#3A3530] text-white px-6 py-2 rounded-lg font-medium transition-colors border border-[#3A3530]"
         >
           {showPreview ? 'Hide Preview' : 'Preview Live'}
         </button>
-        <button className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors">
-          Save Changes
+        <button
+          onClick={() => onSave && onSave(data)}
+          disabled={isSaving}
+          className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
