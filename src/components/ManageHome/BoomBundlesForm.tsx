@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { BoomBundle } from './types';
 import { EditIcon, TrashIcon, EyeIcon, HideEyeIcon } from '@/assets/icons';
 
 interface BoomBundlesFormProps {
   initialData: BoomBundle[];
+  onSave?: (data: BoomBundle[]) => void;
+  isSaving?: boolean;
 }
 
-const BoomBundlesForm: React.FC<BoomBundlesFormProps> = ({ initialData }) => {
+const BoomBundlesForm: React.FC<BoomBundlesFormProps> = ({ initialData, onSave, isSaving }) => {
   const [bundles, setBundles] = useState<BoomBundle[]>(initialData);
+
+  useEffect(() => {
+    setBundles(initialData);
+  }, [initialData]);
 
   const toggleVisibility = (id: string) => {
     setBundles(bundles.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b));
@@ -59,8 +65,12 @@ const BoomBundlesForm: React.FC<BoomBundlesFormProps> = ({ initialData }) => {
       </div>
       
       <div className="mt-8 flex justify-end">
-        <button className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors">
-          Save Changes
+        <button 
+          onClick={() => onSave && onSave(bundles)}
+          disabled={isSaving}
+          className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
