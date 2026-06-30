@@ -1,13 +1,5 @@
 import React from 'react';
-
-interface ComboItem {
-  id: number;
-  pizza: string;
-  bevvies: string;
-  burger: string;
-  welcomeBevvy: string;
-  shots: string;
-}
+import type { ComboItem } from '../../pages/Bites';
 
 interface ComboCardProps {
   combo: ComboItem;
@@ -21,7 +13,7 @@ const ComboCard: React.FC<ComboCardProps> = ({ combo, onEdit }) => {
         {/* Edit Button */}
         <div className="flex justify-end">
           <button
-            onClick={() => onEdit(combo.id)}
+            onClick={() => combo.id !== undefined && onEdit(combo.id)}
             className="bg-[#003240] text-white px-4 py-1 rounded-lg font-semibold"
           >
             Edit
