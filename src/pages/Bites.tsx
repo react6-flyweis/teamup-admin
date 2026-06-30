@@ -5,13 +5,23 @@ import ComboCard from '../components/Bites/ComboCard';
 import ComboModal from '../components/Bites/ComboModal';
 import BitesHeaderBanner from '../components/Bites/BitesHeaderBanner';
 
-// Import images
-import BloodyMaryImage from '../assets/Bloody Mary.png';
-import BurgerImage from '../assets/Fried Chicken Burger.png';
-import TaterTotsImage from '../assets/Tater Tots.png';
-import CoronaImage from '../assets/Corona.png';
+import {
+  useFoodCategoriesQuery,
+  useFoodItemsQuery,
+  useCreateFoodItemMutation,
+  useUpdateFoodItemMutation,
+  useDeleteFoodItemMutation,
+  useDrinksQuery,
+  useCreateDrinkMutation,
+  useUpdateDrinkMutation,
+  useDeleteDrinkMutation,
+  useFoodDrinksContentQuery,
+  useUpdateFoodDrinksContentMutation
+} from '../hooks/useBites';
+import type { FoodComboItem } from '../hooks/useBites';
+
 export interface MenuItem {
-  id: number;
+  id: string;
   image: string;
   name: string;
   category: string;
@@ -19,50 +29,15 @@ export interface MenuItem {
   availability: boolean;
   description: string;
   kcal?: string;
+  price?: number;
+  slug: string;
+  isDrink?: boolean;
+  categoryId?: string;
+  isAlcoholic?: boolean;
 }
 
-
-const initialItems: MenuItem[] = [
-  {
-    id: 1,
-    image: BloodyMaryImage,
-    name: 'Bloody Mary',
-    category: 'Cocktails',
-    subCategory: '---',
-    availability: true,
-    description: 'Lorem Ipsum is simply dummy...'
-  },
-  {
-    id: 2,
-    image: BurgerImage,
-    name: 'Fried Chicken Burger',
-    category: 'Food',
-    subCategory: 'Burger',
-    availability: true,
-    description: 'Lorem Ipsum is simply dummy...'
-  },
-  {
-    id: 3,
-    image: TaterTotsImage,
-    name: 'Tater Tots',
-    category: 'Food Combos',
-    subCategory: 'On The Side',
-    availability: false,
-    description: 'Lorem Ipsum is simply dummy...'
-  },
-  {
-    id: 4,
-    image: CoronaImage,
-    name: 'Corona',
-    category: 'Beer',
-    subCategory: '---',
-    availability: true,
-    description: 'Lorem Ipsum is simply dummy...'
-  }
-];
-
-interface ComboItem {
-  id: number;
+export interface ComboItem {
+  id?: number;
   pizza: string;
   bevvies: string;
   burger: string;
@@ -71,44 +46,105 @@ interface ComboItem {
 }
 
 const Bites = () => {
-  const [items, setItems] = useState<MenuItem[]>(initialItems);
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-
-  const [combos, setCombos] = useState<ComboItem[]>([
-    {
-      id: 1,
-      pizza: "The Buffalo Blaze",
-      bevvies: "2 Bevvies Per Person\nCocktail Upgrade Available",
-      burger: "Big Boss Burger",
-      welcomeBevvy: "Prosecco, Wine, Or\nBottled Beer On Arrival",
-      shots: "X"
-    },
-    {
-      id: 2,
-      pizza: "Your Choice (1 pc)",
-      bevvies: "3 Bevvies Per Person\nCocktail Upgrade Available",
-      burger: "Your Choice (2 pcs)",
-      welcomeBevvy: "Prosecco, Wine, Or\nBottled Beer On Arrival",
-      shots: "1 Shot Per Person"
-    },
-    {
-      id: 3,
-      pizza: "Your Choice (2 pcs)",
-      bevvies: "4 Bevvies Per Person\nCocktail Upgrade Available",
-      burger: "Your Choice (2 pcs)",
-      welcomeBevvy: "Prosecco, Wine, Or\nBottled Beer On Arrival",
-      shots: "1 Shot Per Person"
-    }
-  ]);
-
   const [showComboModal, setShowComboModal] = useState(false);
   const [selectedCombo, setSelectedCombo] = useState<ComboItem | null>(null);
 
-  const handleToggleAvailability = (id: number, availability: boolean) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, availability } : item
-    ));
+  // Queries
+  const { data: categories = [], isLoading: categoriesLoading } = useFoodCategoriesQuery();
+
+  const { data: foodItems = [], isLoading: foodItemsLoading } = useFoodItemsQuery();
+  const createFoodItemMutation = useCreateFoodItemMutation();
+  const updateFoodItemMutation = useUpdateFoodItemMutation();
+  const deleteFoodItemMutation = useDeleteFoodItemMutation();
+
+  const { data: drinks = [], isLoading: drinksLoading } = useDrinksQuery();
+  const createDrinkMutation = useCreateDrinkMutation();
+  const updateDrinkMutation = useUpdateDrinkMutation();
+  const deleteDrinkMutation = useDeleteDrinkMutation();
+
+  const { data: foodDrinksContent, isLoading: contentLoading } = useFoodDrinksContentQuery();
+  const updateContentMutation = useUpdateFoodDrinksContentMutation();
+
+  // Loading indicator
+  if (categoriesLoading || foodItemsLoading || drinksLoading || contentLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#E1017D]"></div>
+      </div>
+    );
+  }
+
+  // Map backend items to unified UI model
+  const mappedFoodItems: MenuItem[] = foodItems.map(item => {
+    const cat = categories.find(c => c._id === item.categoryId);
+    return {
+      id: item._id,
+      image: item.imageUrl || '',
+      name: item.name,
+      category: cat ? cat.name : 'Food',
+      subCategory: item.tags?.[0] || '---',
+      availability: item.isActive,
+      description: item.description || '',
+      kcal: item.calories || '',
+      price: item.price,
+      slug: item.slug,
+      isDrink: false,
+      categoryId: item.categoryId
+    };
+  });
+
+  const mappedDrinks: MenuItem[] = drinks.map(item => {
+    const formatDrinkCategory = (cat: string) => {
+      if (!cat) return 'Drinks';
+      if (cat.toLowerCase() === 'beers') return 'Beer';
+      return cat.charAt(0).toUpperCase() + cat.slice(1);
+    };
+
+    return {
+      id: item._id,
+      image: item.imageUrl || '',
+      name: item.name,
+      category: 'Drinks',
+      subCategory: formatDrinkCategory(item.category),
+      availability: item.isActive,
+      description: item.description || '',
+      price: item.price,
+      slug: item.slug,
+      isDrink: true,
+      isAlcoholic: item.isAlcoholic
+    };
+  });
+
+  const items = [...mappedFoodItems, ...mappedDrinks];
+
+  // Map site content combos
+  const comboSectionItems = foodDrinksContent?.content?.data?.foodCombos?.items || [];
+  const combos: ComboItem[] = comboSectionItems.map((item: FoodComboItem, idx: number) => ({
+    id: item.order || (idx + 1),
+    pizza: item.pizza,
+    bevvies: item.bevvies,
+    burger: item.burger,
+    welcomeBevvy: item.welcomeBevy,
+    shots: item.shots
+  }));
+
+  const handleToggleAvailability = (id: string, availability: boolean) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (item.isDrink) {
+      updateDrinkMutation.mutate({
+        slug: item.slug,
+        payload: { isActive: availability }
+      });
+    } else {
+      updateFoodItemMutation.mutate({
+        slug: item.slug,
+        payload: { isActive: availability }
+      });
+    }
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -117,25 +153,69 @@ const Bites = () => {
   };
 
   const handleDelete = (item: MenuItem) => {
-    setItems(items.filter(i => i.id !== item.id));
+    if (item.isDrink) {
+      deleteDrinkMutation.mutate(item.slug);
+    } else {
+      deleteFoodItemMutation.mutate(item.slug);
+    }
   };
 
   const handleSave = (updatedItem: Partial<MenuItem>) => {
-    if (selectedItem) {
-      // Editing existing item
-      setItems(items.map(item => 
-        item.id === selectedItem.id ? { ...item, ...updatedItem } : item
-      ));
+    const isNew = !selectedItem;
+    const cleanSlug = updatedItem.name
+      ? updatedItem.name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '')
+      : '';
+
+    if (updatedItem.category === 'Drinks') {
+      const categorySlug = (updatedItem.subCategory || 'cocktails').toLowerCase().replace(' ', '-');
+      const payload = {
+        name: updatedItem.name || '',
+        slug: isNew ? cleanSlug : selectedItem.slug,
+        category: categorySlug,
+        description: updatedItem.description || '',
+        price: updatedItem.price || 0,
+        isAlcoholic: updatedItem.isAlcoholic || false,
+        imageUrl: updatedItem.image || '',
+        isActive: true,
+        order: 1
+      };
+
+      if (isNew) {
+        createDrinkMutation.mutate(payload);
+      } else {
+        updateDrinkMutation.mutate({
+          slug: selectedItem.slug,
+          payload
+        });
+      }
     } else {
-      // Adding new item
-      const newItem: MenuItem = {
-        id: Math.max(...items.map(i => i.id)) + 1,
-        image: '', // You would handle image upload here
-        availability: true,
-        ...updatedItem
-      } as MenuItem;
-      setItems([...items, newItem]);
+      const categoryName = updatedItem.category || 'Food';
+      const matchedCat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+      const categoryId = matchedCat ? matchedCat._id : (categories[0]?._id || '');
+
+      const payload = {
+        categoryId,
+        name: updatedItem.name || '',
+        slug: isNew ? cleanSlug : selectedItem.slug,
+        description: updatedItem.description || '',
+        calories: updatedItem.kcal || '',
+        price: updatedItem.price || 0,
+        tags: updatedItem.subCategory ? [updatedItem.subCategory] : [],
+        imageUrl: updatedItem.image || '',
+        isActive: true,
+        order: 1
+      };
+
+      if (isNew) {
+        createFoodItemMutation.mutate(payload);
+      } else {
+        updateFoodItemMutation.mutate({
+          slug: selectedItem.slug,
+          payload
+        });
+      }
     }
+
     setShowModal(false);
     setSelectedItem(null);
   };
@@ -149,20 +229,55 @@ const Bites = () => {
   };
 
   const handleSaveCombo = (updatedCombo: Partial<ComboItem>) => {
+    let newItems: FoodComboItem[] = [];
+
     if (selectedCombo) {
-      setCombos(combos.map(combo =>
-        combo.id === selectedCombo.id ? { ...combo, ...updatedCombo } : combo
-      ));
+      newItems = comboSectionItems.map((item: FoodComboItem, idx: number) => {
+        const currentId = item.order || (idx + 1);
+        if (currentId === selectedCombo.id) {
+          return {
+            ...item,
+            pizza: updatedCombo.pizza || item.pizza,
+            bevvies: updatedCombo.bevvies || item.bevvies,
+            burger: updatedCombo.burger || item.burger,
+            welcomeBevy: updatedCombo.welcomeBevvy || item.welcomeBevy,
+            shots: updatedCombo.shots || item.shots
+          };
+        }
+        return item;
+      });
     } else {
-      const newCombo = {
-        id: Math.max(...combos.map(c => c.id)) + 1,
-        ...updatedCombo
-      } as ComboItem;
-      setCombos([...combos, newCombo]);
+      const newOrder = comboSectionItems.length + 1;
+      const newComboItem: FoodComboItem = {
+        title: `Combo ${newOrder}`,
+        subtitle: "heres what is included",
+        pizza: updatedCombo.pizza || '',
+        bevvies: updatedCombo.bevvies || '',
+        burger: updatedCombo.burger || '',
+        welcomeBevy: updatedCombo.welcomeBevvy || '',
+        shots: updatedCombo.shots || '',
+        order: newOrder,
+        isActive: true
+      };
+      newItems = [...comboSectionItems, newComboItem];
     }
+
+    updateContentMutation.mutate({
+      data: {
+        foodCombos: {
+          title: foodDrinksContent?.content?.data?.foodCombos?.title || "Our Food Combos",
+          items: newItems
+        }
+      }
+    });
+
     setShowComboModal(false);
     setSelectedCombo(null);
   };
+
+  const isSavingItem = createFoodItemMutation.isPending || updateFoodItemMutation.isPending || createDrinkMutation.isPending || updateDrinkMutation.isPending;
+  const isSavingCombo = updateContentMutation.isPending;
+  const isProcessing = deleteFoodItemMutation.isPending || deleteDrinkMutation.isPending || (updateFoodItemMutation.isPending && !showModal) || (updateDrinkMutation.isPending && !showModal);
 
   return (
     <div className="flex flex-col gap-8 min-h-screen">
@@ -190,6 +305,7 @@ const Bites = () => {
           onToggleAvailability={handleToggleAvailability}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          isProcessing={isProcessing}
         />
       </div>
 
@@ -228,6 +344,7 @@ const Bites = () => {
           }}
           item={selectedItem}
           onSave={handleSave}
+          isSaving={isSavingItem}
         />
       )}
 
@@ -240,6 +357,7 @@ const Bites = () => {
             setSelectedCombo(null);
           }}
           onSave={handleSaveCombo}
+          isSaving={isSavingCombo}
         />
       )}
     </div>
