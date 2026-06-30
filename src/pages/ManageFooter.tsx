@@ -7,6 +7,7 @@ import {
   useUpdateContentPageMutation,
   useDeleteContentPageMutation,
 } from '@/hooks/useContentPages';
+import { useFooterQuery, useUpdateFooterMutation } from '@/hooks/useFooter';
 
 interface FooterLink {
   id: string;
@@ -16,10 +17,12 @@ interface FooterLink {
 }
 
 const ManageFooter: React.FC = () => {
-  const { data: pagesData, isLoading, error } = useContentPagesQuery();
+  const { data: pagesData, isLoading: isPagesLoading, error: pagesError } = useContentPagesQuery();
+  const { data: footerData, isLoading: isFooterLoading, error: footerError } = useFooterQuery();
   const createMutation = useCreateContentPageMutation();
   const updateMutation = useUpdateContentPageMutation();
   const deleteMutation = useDeleteContentPageMutation();
+  const updateFooterMutation = useUpdateFooterMutation();
 
   const [links, setLinks] = useState<FooterLink[]>([]);
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -47,16 +50,57 @@ const ManageFooter: React.FC = () => {
   }, [pagesData]);
 
   const [companyInfo, setCompanyInfo] = useState({
-    address: '70 Washington Square South, New York, NY 10012, United States',
-    phone: '1800 100 8000',
-    copyright: '© 2025 Booksy Inc. All rights reserved',
+    address: '',
+    phone: '',
+    copyright: '',
   });
 
   const [socials, setSocials] = useState({
-    facebook: 'https://facebook.com',
-    instagram: 'https://instagram.com',
-    tiktok: 'https://tiktok.com',
+    facebook: '',
+    instagram: '',
+    tiktok: '',
   });
+
+  useEffect(() => {
+    if (footerData?.content?.data) {
+      const { companyInfo: apiCompanyInfo, socialMediaLinks: apiSocials } = footerData.content.data;
+      setCompanyInfo({
+        address: apiCompanyInfo?.officeAddress || '',
+        phone: apiCompanyInfo?.phoneNumber || '',
+        copyright: apiCompanyInfo?.copyrightText || '',
+      });
+      setSocials({
+        facebook: apiSocials?.facebookUrl || '',
+        instagram: apiSocials?.instagramUrl || '',
+        tiktok: apiSocials?.tiktokUrl || '',
+      });
+    }
+  }, [footerData]);
+
+  const handleSaveFooterChanges = async () => {
+    try {
+      await updateFooterMutation.mutateAsync({
+        section: 'footer',
+        data: {
+          companyInfo: {
+            officeAddress: companyInfo.address,
+            phoneNumber: companyInfo.phone,
+            copyrightText: companyInfo.copyright,
+          },
+          socialMediaLinks: {
+            facebookUrl: socials.facebook,
+            instagramUrl: socials.instagram,
+            tiktokUrl: socials.tiktok,
+          },
+        },
+        isActive: true,
+      });
+      setFeedback({ message: 'Footer changes saved successfully!', type: 'success' });
+    } catch (err) {
+      console.error('Failed to save footer changes:', err);
+      setFeedback({ message: 'Failed to save footer changes.', type: 'error' });
+    }
+  };
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,7 +160,7 @@ const ManageFooter: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isPagesLoading || isFooterLoading) {
     return (
       <div className="p-6 text-white min-h-screen flex justify-center items-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E1017D]"></div>
@@ -124,11 +168,11 @@ const ManageFooter: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (pagesError || footerError) {
     return (
       <div className="p-6 text-white min-h-screen">
         <div className="text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          Failed to load content pages. Please try again later.
+          Failed to load footer configuration. Please try again later.
         </div>
       </div>
     );
@@ -174,11 +218,15 @@ const ManageFooter: React.FC = () => {
             <div className="space-y-3">
               {links.map((link) => (
                 <div key={link.id} className="flex items-center gap-4 p-3 border border-[#3A3530] rounded-lg bg-[#222222]">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-white mb-1">{link.label}</div>
                     <div className="text-xs text-gray-500 mb-1">{link.url}</div>
                     <div className="text-xs text-gray-400 line-clamp-1 italic bg-[#1A1A1A] p-1 rounded">
-                      {link.content.replace(/<[^>]+>/g, '') || 'No content written...'}
+                      {(() => {
+                        const plainText = link.content.replace(/<[^>]+>/g, '');
+                        if (!plainText) return 'No content written...';
+                        return plainText.length > 100 ? `${plainText.substring(0, 100)}...` : plainText;
+                      })()}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -273,8 +321,12 @@ const ManageFooter: React.FC = () => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <button className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-8 py-3 rounded-lg font-medium transition-colors text-lg">
-          Save All Footer Changes
+        <button
+          onClick={handleSaveFooterChanges}
+          disabled={updateFooterMutation.isPending}
+          className="bg-[#E1017D] hover:bg-[#c0016a] text-white px-8 py-3 rounded-lg font-medium transition-colors text-lg disabled:opacity-50"
+        >
+          {updateFooterMutation.isPending ? 'Saving...' : 'Save All Footer Changes'}
         </button>
       </div>
 
