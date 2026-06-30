@@ -1,34 +1,79 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import  { useState } from "react";
+import { useState } from "react";
 import PeakNonPeakModal from "./modals/PeakNonPeakModal";
 import HorizontalDotsIcon from "@/assets/icons/HorizontalDotsIcon";
-import ActionModal from "./modals/ActionModal"; // Import your ActionModal here
-
-const initialData = [
-  { id: "1", days: "Monday - Thursday", startTime: "12 PM", endTime: "6 PM", price: "$75", peak: false },
-  { id: "2", days: "Friday", startTime: "6 PM", endTime: "11 PM", price: "$90", peak: true },
-  { id: "3", days: "Saturday", startTime: "7 PM", endTime: "11 PM", price: "$100", peak: true },
-  { id: "4", days: "Sunday", startTime: "3 PM", endTime: "7 PM", price: "$100", peak: true },
-  { id: "5", days: "Sunday", startTime: "7 PM", endTime: "11 PM", price: "$110", peak: true },
-  { id: "6", days: "Monday", startTime: "10 AM", endTime: "1 PM", price: "$60", peak: false },
-  { id: "7", days: "Tuesday", startTime: "2 PM", endTime: "5 PM", price: "$70", peak: false },
-  { id: "8", days: "Wednesday", startTime: "4 PM", endTime: "8 PM", price: "$80", peak: false },
-  { id: "9", days: "Thursday", startTime: "7 PM", endTime: "10 PM", price: "$85", peak: true },
-  { id: "10", days: "Friday", startTime: "10 AM", endTime: "2 PM", price: "$65", peak: false },
-
-];
+import ActionModal from "./modals/ActionModal";
+import {
+  useGamePricingQuery,
+  useCreateGamePricingMutation,
+  useUpdateGamePricingMutation,
+  useDeleteGamePricingMutation,
+} from "@/hooks/useGamePricing";
 
 const columns = [
-  { key: "days", label: "Days", className: "w-[23%]" },
-  { key: "startTime", label: "Start Time", className: "w-[14%]" },
-  { key: "endTime", label: "End Time", className: "w-[14%]" },
-  { key: "price", label: "Price ($)", className: "w-[14%]" },
-  { key: "peak", label: "Peak/Non Peak", className: "w-[17%]" },
-  { key: "action", label: "Action", className: "w-[18%] text-center" },
+  { key: "game", label: "Game", className: "w-[15%]" },
+  { key: "location", label: "Location", className: "w-[15%]" },
+  { key: "days", label: "Days", className: "w-[18%]" },
+  { key: "startTime", label: "Start Time", className: "w-[11%]" },
+  { key: "endTime", label: "End Time", className: "w-[11%]" },
+  { key: "price", label: "Price ($)", className: "w-[10%]" },
+  { key: "peak", label: "Peak/Non Peak", className: "w-[12%]" },
+  { key: "action", label: "Action", className: "w-[8%] text-center" },
 ];
 
+function formatDays(daysOfWeek: string[]) {
+  if (!daysOfWeek || daysOfWeek.length === 0) return "-";
+  
+  const formatted = daysOfWeek.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+  
+  if (
+    daysOfWeek.length === 4 &&
+    daysOfWeek.includes("monday") &&
+    daysOfWeek.includes("tuesday") &&
+    daysOfWeek.includes("wednesday") &&
+    daysOfWeek.includes("thursday")
+  ) {
+    return "Monday - Thursday";
+  }
+  if (
+    daysOfWeek.length === 5 &&
+    daysOfWeek.includes("monday") &&
+    daysOfWeek.includes("tuesday") &&
+    daysOfWeek.includes("wednesday") &&
+    daysOfWeek.includes("thursday") &&
+    daysOfWeek.includes("friday")
+  ) {
+    return "Monday - Friday";
+  }
+  if (
+    daysOfWeek.length === 2 &&
+    daysOfWeek.includes("saturday") &&
+    daysOfWeek.includes("sunday")
+  ) {
+    return "Saturday - Sunday";
+  }
+  
+  return formatted.join(", ");
+}
+
+function formatTime(timeStr: string) {
+  if (!timeStr) return "-";
+  const [hourStr, minStr] = timeStr.split(":");
+  const hour = parseInt(hourStr);
+  if (isNaN(hour)) return timeStr;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${formattedHour}:${minStr || "00"} ${ampm}`;
+}
+
 export default function PeakNonPeakPricing() {
-  const [data, setData] = useState(initialData);
+  const { data: pricingData, isLoading, error } = useGamePricingQuery();
+  const createMutation = useCreateGamePricingMutation();
+  const updateMutation = useUpdateGamePricingMutation();
+  const deleteMutation = useDeleteGamePricingMutation();
+
+  const data = pricingData?.pricing || [];
+
   const [showModal, setShowModal] = useState(false);
   const [editRow, setEditRow] = useState<any | null>(null);
   const [actionModalIdx, setActionModalIdx] = useState<number | null>(null);
@@ -39,18 +84,32 @@ export default function PeakNonPeakPricing() {
   };
 
   const handleSave = (row: any) => {
-    if (row.id) {
-      setData(data.map((d) => (d.id === row.id ? row : d)));
+    if (row._id) {
+      updateMutation.mutate(
+        { id: row._id, payload: row },
+        {
+          onSuccess: () => {
+            setShowModal(false);
+            setEditRow(null);
+          },
+        }
+      );
     } else {
-      setData([...data, { ...row, id: (data.length + 1).toString() }]);
+      createMutation.mutate(row, {
+        onSuccess: () => {
+          setShowModal(false);
+          setEditRow(null);
+        },
+      });
     }
-    setShowModal(false);
-    setEditRow(null);
   };
 
   const handleDelete = (rowId: string) => {
-    setData(data.filter((d) => d.id !== rowId));
-    setActionModalIdx(null);
+    deleteMutation.mutate(rowId, {
+      onSuccess: () => {
+        setActionModalIdx(null);
+      },
+    });
   };
 
   function closeActionModal() {
@@ -94,70 +153,94 @@ export default function PeakNonPeakPricing() {
             </tr>
           </thead>
           <tbody>
-            {data.map((row, idx) => {
-              const isLastRows = idx >= data.length - 2;
+            {isLoading ? (
+              <tr>
+                <td colSpan={columns.length} className="py-8 text-center text-gray-500 font-montserrat bg-[#FFFBFD]">
+                  <div className="flex justify-center items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#E1017D]"></div>
+                    Loading pricing rules...
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={columns.length} className="py-8 text-center text-red-500 font-montserrat bg-[#FFFBFD]">
+                  Failed to load pricing. Please try again later.
+                </td>
+              </tr>
+            ) : data.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="py-8 text-center text-gray-400 font-montserrat bg-[#FFFBFD]">
+                  No pricing rules found.
+                </td>
+              </tr>
+            ) : (
+              data.map((row, idx) => {
+                const isLastRows = idx >= data.length - 2;
 
-              return (
-                <tr
-                  key={row.id}
-                  className={`
-                  group ${idx % 2 === 0 ? "bg-[#FFF0F8]" : "bg-[#FFFBFD]"}
-                  hover:bg-[#f3e2f6] hover:shadow-sm   transition-colors duration-200 ease-in-out cursor-pointer
-                  relative
-                `}
-                >
-                  <td className="py-4 px-2 ">{row.days}</td>
-                  <td className="py-4 px-2">{row.startTime}</td>
-                  <td className="py-4 px-2">{row.endTime}</td>
-                  <td className="py-4 px-2">{row.price}</td>
-                  <td className="py-4 px-2">
-                    {row.peak ? "Peak" : "Non Peak"}
-                  </td>
-                  <td className="py-4 px-2 text-center relative">
-                    <button
-                      className="inline-flex items-center justify-center relative"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActionModalIdx(idx === actionModalIdx ? null : idx);
-                      }}
-                      aria-label="More actions"
-                    >
-                      <HorizontalDotsIcon />
-                    </button>
-                    {actionModalIdx === idx && (
-                      <>
-                        {/* Backdrop closes modal on outside click */}
-                        <div
-                          className="fixed inset-0 z-50"
-                          onClick={closeActionModal}
-                          tabIndex={-1}
-                          aria-hidden
-                        />
-                        <ActionModal
-                          onClose={closeActionModal}
-                          onEdit={() => openModal(row)}
-                          onDelete={() => handleDelete(row.id)}
-                          style={
-                            isLastRows
-                              ? {
-                                  bottom: "100%",
-                                  top: "auto",
-                                  marginBottom: "8px",
-                                }
-                              : {
-                                  top: "100%",
-                                  bottom: "auto",
-                                  marginTop: "8px",
-                                }
-                          }
-                          direction={isLastRows ? "up" : "down"}
-                        />
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr
+                    key={row._id}
+                    className={`
+                    group ${idx % 2 === 0 ? "bg-[#FFF0F8]" : "bg-[#FFFBFD]"}
+                    hover:bg-[#f3e2f6] hover:shadow-sm   transition-colors duration-200 ease-in-out cursor-pointer
+                    relative
+                  `}
+                  >
+                    <td className="py-4 px-2 font-medium">{row.game?.name || "-"}</td>
+                    <td className="py-4 px-2">{row.location ? `${row.location.name} (${row.location.state})` : "-"}</td>
+                    <td className="py-4 px-2 ">{formatDays(row.daysOfWeek)}</td>
+                    <td className="py-4 px-2">{formatTime(row.startTime)}</td>
+                    <td className="py-4 px-2">{formatTime(row.endTime)}</td>
+                    <td className="py-4 px-2">${row.price} ({row.pricingType === "per_person" ? "per person" : "per lane"})</td>
+                    <td className="py-4 px-2">
+                      {row.period === "peak" ? "Peak" : "Non Peak"}
+                    </td>
+                    <td className="py-4 px-2 text-center relative">
+                      <button
+                        className="inline-flex items-center justify-center relative"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActionModalIdx(idx === actionModalIdx ? null : idx);
+                        }}
+                        aria-label="More actions"
+                      >
+                        <HorizontalDotsIcon />
+                      </button>
+                      {actionModalIdx === idx && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-50"
+                            onClick={closeActionModal}
+                            tabIndex={-1}
+                            aria-hidden
+                          />
+                          <ActionModal
+                            onClose={closeActionModal}
+                            onEdit={() => openModal(row)}
+                            onDelete={() => handleDelete(row._id)}
+                            style={
+                              isLastRows
+                                ? {
+                                    bottom: "100%",
+                                    top: "auto",
+                                    marginBottom: "8px",
+                                  }
+                                : {
+                                    top: "100%",
+                                    bottom: "auto",
+                                    marginTop: "8px",
+                                  }
+                            }
+                            direction={isLastRows ? "up" : "down"}
+                          />
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -170,6 +253,7 @@ export default function PeakNonPeakPricing() {
             setEditRow(null);
           }}
           onSave={handleSave}
+          isSaving={createMutation.isPending || updateMutation.isPending}
         />
       )}
     </section>
